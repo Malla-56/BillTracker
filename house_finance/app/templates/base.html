@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share House Payment Tracker</title>
+    <meta name="theme-color" content="#0d6efd">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .nav-link.active { font-weight: bold; border-bottom: 2px solid #0d6efd; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary mb-4 shadow-sm">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">🏠 Share House Finance</span>
+            <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                📂 Upload CSV
+            </button>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <ul class="nav nav-tabs flex-grow-1 border-bottom-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'rules' %}active{% endif %}" href="{{ url_for('main.view_rules', month=month, year=year) }}">Rules</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'transactions' %}active{% endif %}" href="{{ url_for('main.view_transactions', month=month, year=year) }}">Transactions</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'bills' %}active{% endif %}" href="{{ url_for('main.view_bills') }}">Bills</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'calendar' %}active{% endif %}" href="{{ url_for('main.view_calendar') }}">Calendar</a>
+                </li>
+            </ul>
+            
+            <form class="d-flex gx-2 align-items-center" method="GET">
+                {% if active_tab in ['rules', 'transactions'] %}
+                <!-- Selectors only relevant for Views that filter by date -->
+                <select name="month" class="form-select form-select-sm me-2" onchange="this.form.submit()">
+                    <option value="01" {% if month == '01' %}selected{% endif %}>January</option>
+                    <option value="02" {% if month == '02' %}selected{% endif %}>February</option>
+                    <option value="03" {% if month == '03' %}selected{% endif %}>March</option>
+                    <option value="04" {% if month == '04' %}selected{% endif %}>April</option>
+                    <option value="05" {% if month == '05' %}selected{% endif %}>May</option>
+                    <option value="06" {% if month == '06' %}selected{% endif %}>June</option>
+                    <option value="07" {% if month == '07' %}selected{% endif %}>July</option>
+                    <option value="08" {% if month == '08' %}selected{% endif %}>August</option>
+                    <option value="09" {% if month == '09' %}selected{% endif %}>September</option>
+                    <option value="10" {% if month == '10' %}selected{% endif %}>October</option>
+                    <option value="11" {% if month == '11' %}selected{% endif %}>November</option>
+                    <option value="12" {% if month == '12' %}selected{% endif %}>December</option>
+                </select>
+                <select name="year" class="form-select form-select-sm me-2" onchange="this.form.submit()">
+                    {% for y in range(2023, 2027) %}
+                    <option value="{{ y }}" {% if year|string == y|string %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Flash messages can go here -->
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal fade" id="uploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ url_for('main.upload_file') }}" method="POST" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Upload Statement</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted">Supports ING CSV format.</p>
+                        <input type="file" name="file" class="form-control" accept=".csv" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Rule Modal (Global for Context Menu) -->
+    <div class="modal fade" id="addRuleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ url_for('main.add_rule') }}" method="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Rule</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label>Name</label>
+                            <input type="text" class="form-control" name="name" placeholder="e.g. John Rent" required>
+                        </div>
+                         <div class="mb-3">
+                            <label>Due Day (Optional)</label>
+                            <input type="number" min="1" max="31" class="form-control" name="due_day" placeholder="e.g. 15">
+                        </div>
+                        <div class="mb-3">
+                            <label>Reference String</label>
+                            <input type="text" class="form-control" id="ruleRefInput" name="reference" placeholder="e.g. REF: JOHN" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Expected Amount</label>
+                            <input type="number" step="0.01" class="form-control" name="amount" placeholder="e.g. 500.00" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Save Rule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

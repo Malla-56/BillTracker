@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Transactions</h5>
+        <small class="text-muted">Right-click a row to add a rule for it.</small>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle mb-0" id="txTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Rule Match</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr class="tx-row" data-desc="{{ t.description }}">
+                        <td>{{ t.date }}</td>
+                        <td>{{ t.description }}</td>
+                        <td class="{{ 'text-success' if t.amount > 0 else 'text-danger' }}">
+                            {{ "%.2f"|format(t.amount) }}
+                        </td>
+                        <td>
+                            {% if t.matched_rule %}
+                                <span class="badge bg-success">{{ t.matched_rule }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">No transactions found. Upload a CSV!</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Context Menu -->
+<div id="contextMenu" class="dropdown-menu" style="display:none; position:absolute; z-index:1000;">
+    <a class="dropdown-item" href="#" id="ctxAddRule">Create Rule for this...</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const contextMenu = document.getElementById('contextMenu');
+    const table = document.getElementById('txTable');
+    const ctxAddRule = document.getElementById('ctxAddRule');
+    let selectedDesc = "";
+
+    document.addEventListener('click', () => {
+        contextMenu.style.display = 'none';
+    });
+
+    table.addEventListener('contextmenu', (e) => {
+        const row = e.target.closest('tr');
+        if (row && row.classList.contains('tx-row')) {
+            e.preventDefault();
+            selectedDesc = row.getAttribute('data-desc');
+            
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = e.pageY + 'px';
+        }
+    });
+
+    ctxAddRule.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Open the modal and pre-fill
+        const modal = new bootstrap.Modal(document.getElementById('addRuleModal'));
+        document.getElementById('ruleRefInput').value = selectedDesc;
+        modal.show();
+    });
+</script>
+{% endblock %}

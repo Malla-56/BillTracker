@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Payment Statuses</h5>
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addRuleModal">
+            + New Rule
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Due Day</th>
+                        <th>Reference</th>
+                        <th>Expected</th>
+                        <th>Paid So Far</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in rules %}
+                    <tr>
+                        <td>{{ rule.name }}</td>
+                        <td>
+                            {% if rule.due_day %}
+                                <span class="badge bg-light text-dark border">{{ rule.due_day }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ rule.reference }}</code></td>
+                        <td>${{ "%.2f"|format(rule.expected) }}</td>
+                        <td>${{ "%.2f"|format(rule.paid) }}</td>
+                        <td>
+                            <span class="badge bg-{{ rule.color }}" style="width: 100px;">{{ rule.status }}</span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('main.delete_rule', rule_id=rule.id) }}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No rules or data for this month.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

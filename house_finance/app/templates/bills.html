@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Manual Add Bill -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Add Single Bill</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('main.add_bill') }}" method="POST">
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <input type="text" class="form-control" name="name" placeholder="One-off Bill" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label>Due Date</label>
+                            <input type="date" class="form-control" name="due_date" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label>Amount</label>
+                            <input type="number" step="0.01" class="form-control" name="amount">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Add Bill</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recurring Templates -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Recurring Templates</h5>
+            </div>
+            <div class="card-body">
+                 <form action="{{ url_for('main.add_recurring_bill') }}" method="POST" class="row g-2 mb-3 align-items-end">
+                    <div class="col-5">
+                         <label class="small">Name</label>
+                        <input type="text" class="form-control form-control-sm" name="name" placeholder="e.g. Internet" required>
+                    </div>
+                    <div class="col-3">
+                         <label class="small">Due Day</label>
+                        <input type="number" min="1" max="31" class="form-control form-control-sm" name="due_day" placeholder="Day" required>
+                    </div>
+                    <div class="col-4">
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Save Template</button>
+                    </div>
+                </form>
+                
+                <h6 class="small text-muted border-bottom pb-2">Saved Templates</h6>
+                <ul class="list-group list-group-flush small">
+                    {% for r in recurring %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span>{{ r.name }} (Due {{ r.due_day }}{{ 'st' if r.due_day == 1 else 'th' }})</span>
+                        <span class="badge bg-light text-dark">${{ r.amount }}</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted ps-0">No templates saved.</li>
+                    {% endfor %}
+                </ul>
+                
+                <hr>
+                <form action="{{ url_for('main.generate_bills') }}" method="POST">
+                    <input type="hidden" name="month" value="{{ current_month }}">
+                    <input type="hidden" name="year" value="{{ current_year }}">
+                    <button type="submit" class="btn btn-success w-100 btn-sm">
+                        Generate Bills for This Month ({{ current_month }}/{{ current_year }})
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Bills List</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Due Date</th>
+                        <th>Name</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in bills %}
+                    <tr class="{{ 'table-success' if bill.is_paid else '' }}">
+                        <td>{{ bill.due_date }}</td>
+                        <td>{{ bill.name }}</td>
+                        <td>{{ "$%.2f"|format(bill.amount) if bill.amount else '-' }}</td>
+                        <td>
+                            {% if bill.is_paid %}
+                                <span class="badge bg-success">PAID</span>
+                                <small class="text-muted d-block">{{ bill.paid_date }}</small>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">DUE</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('main.pay_bill', bill_id=bill.id) }}" class="btn btn-sm {{ 'btn-outline-secondary' if bill.is_paid else 'btn-success' }}">
+                                {{ 'Mark Unpaid' if bill.is_paid else 'Mark Paid' }}
+                            </a>
+                            <a href="{{ url_for('main.delete_bill', bill_id=bill.id) }}" class="btn btn-sm btn-outline-danger">Del</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No bills tracked yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
